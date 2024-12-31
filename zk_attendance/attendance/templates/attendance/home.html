@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <title>قارئ بيانات البصمة</title>
+    <meta charset="utf-8">
+    {% csrf_token %}
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .loading:after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .attendance-table th, .attendance-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+        }
+        .attendance-table th {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>قارئ بيانات البصمة ZK</h1>
+        
+        <div class="form-group">
+            <label for="ip">عنوان IP:</label>
+            <input type="text" id="ip" name="ip" placeholder="مثال: 192.168.1.201" pattern="^(\d{1,3}\.){3}\d{1,3}$">
+            <small style="color: #666;">يجب أن يكون عنوان IP صحيح مثل: 192.168.1.201</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="port">المنفذ:</label>
+            <input type="number" id="port" name="port" value="4370" min="1" max="65535">
+            <small style="color: #666;">المنفذ الافتراضي هو 4370</small>
+        </div>
+        
+        <button onclick="fetchData()" id="fetchButton">قراءة البيانات</button>
+        <div id="loading" class="loading"></div>
+        <div id="error" class="error"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function validateIP(ip) {
+            const pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!pattern.test(ip)) return false;
+            
+            const parts = ip.split('.');
+            return parts.every(part => {
+                const num = parseInt(part, 10);
+                return num >= 0 && num <= 255;
+            });
+        }
+
+        function formatAttendanceData(data) {
+            if (!data || data.length === 0) {
+                return '<p>لا توجد بيانات حضور</p>';
+            }
+
+            let html = '<table class="attendance-table">';
+            html += '<tr><th>رقم المستخدم</th><th>التاريخ والوقت</th><th>الحالة</th><th>نوع البصمة</th></tr>';
+            
+            data.forEach(record => {
+                html += `<tr>
+                    <td>${record.user_id}</td>
+                    <td>${record.timestamp}</td>
+                    <td>${record.status}</td>
+                    <td>${record.punch}</td>
+                </tr>`;
+            });
+            
+            html += '</table>';
+            return html;
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function fetchData() {
+            const ip = document.getElementById('ip').value;
+            const port = document.getElementById('port').value;
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+            const loadingDiv = document.getElementById('loading');
+            const fetchButton = document.getElementById('fetchButton');
+            
+            // التحقق من صحة عنوان IP
+            if (!validateIP(ip)) {
+                errorDiv.textContent = 'عنوان IP غير صالح';
+                errorDiv.style.display = 'block';
+                resultDiv.style.display = 'none';
+                return;
+            }
+            
+            // التحقق من صحة المنفذ
+            const portNum = parseInt(port);
+            if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+                errorDiv.textContent = 'رقم المنفذ غير صالح';
+                errorDiv.style.display = 'block';
+                resultDiv.style.display = 'none';
+                return;
+            }
+            
+            // إخفاء الرسائل السابقة وإظهار التحميل
+            resultDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+            fetchButton.disabled = true;
+            
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch('/attendance/fetch/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    ip: ip,
+                    port: parseInt(port)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = 'none';
+                fetchButton.disabled = false;
+                
+                if (data.status === 'success') {
+                    resultDiv.innerHTML = '<h3>البيانات المستلمة:</h3>' + 
+                        formatAttendanceData(data.data);
+                    resultDiv.style.display = 'block';
+                } else {
+                    errorDiv.textContent = data.message;
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                fetchButton.disabled = false;
+                errorDiv.textContent = 'حدث خطأ أثناء الاتصال بالخادم';
+                errorDiv.style.display = 'block';
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

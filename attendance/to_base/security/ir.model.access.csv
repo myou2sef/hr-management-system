@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_base_language_export,base.language.export,model_base_language_export,base.group_user,1,1,1,1
+access_to_base_user,to.base.user,model_to_base,hr.group_hr_user,1,1,1,0
+access_to_base_manager,to.base.manager,model_to_base,hr.group_hr_manager,1,1,1,1

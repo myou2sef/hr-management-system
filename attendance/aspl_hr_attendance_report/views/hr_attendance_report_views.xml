@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Attendance Report Menu -->
+    <menuitem id="menu_hr_attendance_report"
+              name="Reports"
+              parent="hr_attendance.menu_hr_attendance_settings"
+              sequence="90"
+              groups="hr.group_hr_user"/>
+
+    <!-- Action for Attendance Report -->
+    <record id="action_hr_attendance_report" model="ir.actions.act_window">
+        <field name="name">Attendance Report</field>
+        <field name="res_model">attendance.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Menu item for Attendance Report -->
+    <menuitem id="menu_attendance_report_wizard"
+              name="Generate Report"
+              parent="menu_hr_attendance_report"
+              action="action_hr_attendance_report"
+              sequence="1"
+              groups="hr.group_hr_user"/>
+
+    <!-- Employee Inherit Form View -->
+    <record id="hr_employee_attendance_report_view_form" model="ir.ui.view">
+        <field name="name">hr.employee.attendance.report.form</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="%(action_hr_attendance_report)d"
+                        type="action"
+                        class="oe_stat_button"
+                        icon="fa-calendar"
+                        groups="hr.group_hr_user"
+                        context="{'default_employee_ids': [(6,0,[active_id])]}">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Attendance</span>
+                        <span class="o_stat_text">Report</span>
+                    </div>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <!-- Attendance Form View Button -->
+    <record id="hr_attendance_view_form_inherit" model="ir.ui.view">
+        <field name="name">hr.attendance.form.inherit</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button name="%(action_hr_attendance_report)d"
+                            type="action"
+                            string="Generate Report"
+                            class="btn-primary"
+                            groups="hr.group_hr_user"
+                            context="{'default_employee_ids': [(6,0,[employee_id])]}"/>
+                </header>
+            </xpath>
+        </field>
+    </record>
+</odoo>

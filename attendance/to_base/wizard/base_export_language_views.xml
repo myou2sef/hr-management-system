@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="wizard_lang_export" model="ir.ui.view">
+        <field name="name">Export Translations</field>
+        <field name="model">base.language.export</field>
+        <field name="arch" type="xml">
+            <form string="Export Translations">
+                <field invisible="1" name="state"/>
+                <field name="name" invisible="1"/>
+                <group invisible="state != 'choose'" string="Export Settings">
+                    <field name="lang"/>
+                    <field name="format"/>
+                    <field name="modules" widget="many2many_tags"/>
+                </group>
+                <div invisible="state != 'get'" class="alert alert-info" role="alert">
+                    <p>Here is the exported translation file: <field name="data" readonly="1" filename="name"/></p>
+                </div>
+                <footer>
+                    <div invisible="state != 'choose'">
+                        <button name="act_getfile" string="Export" type="object" class="btn-primary"/>
+                        <button special="cancel" string="Cancel" type="object" class="btn-secondary"/>
+                    </div>
+                    <div invisible="state != 'get'">
+                        <button special="cancel" string="Close" type="object" class="btn-primary"/>
+                    </div>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_translation_export" model="ir.actions.act_window">
+        <field name="name">Export Translation</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">base.language.export</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
+sudo cp -r /project/attendance/aspl_hr_attendance_report /opt/odoo17/odoo17-custom-addons/
+sudo chown -R odoo17:odoo17 /opt/odoo17/odoo17-custom-addons/aspl_hr_attendance_report
